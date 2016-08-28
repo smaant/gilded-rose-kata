@@ -7,6 +7,7 @@
 (def brie     "Aged Brie")
 (def passes   "Backstage passes to a TAFKAL80ETC concert")
 (def sulfuras "Sulfuras, Hand Of Ragnaros")
+(def conjured "Conjured Belt")
 
 (def ageing-items [vest elixir])
 
@@ -40,8 +41,20 @@
     (doseq [item (update-quality (items ageing-items 0 5))]
       (should= 3 (:quality item))))
 
+  (it "decreases quality of Conjured item by two when sell-in > 0"
+    (doseq [item (update-quality (items [conjured] 5 5))]
+      (should= 3 (:quality item))))
+
+  (it "decreases quality of Conjured item by two when sell-in = 0"
+    (doseq [item (update-quality (items [conjured] 1 5))]
+      (should= 3 (:quality item))))
+
+  (it "decreases quality of Conjured item by four when sell-in < 0"
+    (doseq [item (update-quality (items [conjured] 0 5))]
+      (should= 1 (:quality item))))
+
   (it "doesn't decrease quality below zero"
-    (doseq [item (update-quality (items ageing-items 5 0))]
+    (doseq [item (update-quality (items (conj ageing-items conjured) 5 0))]
       (should= 0 (:quality item))))
 
   (it "increases the quality of Brie every update"

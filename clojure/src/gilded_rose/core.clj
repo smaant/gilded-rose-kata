@@ -4,10 +4,12 @@
 (def ^:const max-quality 50)
 
 (defn- dec-min
-  [val min-val]
-  (max (dec val) min-val))
+  "Decrease given `val` by `dec-by` (or 1), but not lower than `min-val`"
+  ([val min-val]        (dec-min val 1 min-val))
+  ([val dec-by min-val] (max (- val dec-by) min-val)))
 
 (defn- inc-max
+  "Increase given `val` but not higher than `max-val`"
   [val max-val]
   (min (inc val) max-val))
 
@@ -52,6 +54,15 @@
   [item]
   item)
 
+(defmethod update-item "Conjured Belt"
+  [item]
+  (-> item
+      (update :sell-in dec)
+      (as-> {:keys [sell-in] :as item*}
+        (cond-> item*
+          (neg? sell-in) (update :quality dec-min 2 min-quality)
+          :always        (update :quality dec-min 2 min-quality)))))
+
 (defn update-quality
   [items]
   (map update-item items))
@@ -66,5 +77,6 @@
                    (item "Aged Brie" 2 0)
                    (item "Elixir of the Mongoose" 5 7)
                    (item "Sulfuras, Hand Of Ragnaros" 0 80)
-                   (item "Backstage passes to a TAFKAL80ETC concert" 15 20)]]
+                   (item "Backstage passes to a TAFKAL80ETC concert" 15 20)
+                   (item "Conjured Belt" 13 34)]]
     (update-quality inventory)))
