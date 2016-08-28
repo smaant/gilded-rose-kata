@@ -1,37 +1,60 @@
 (ns gilded-rose.core)
 
+(def ^:const min-quality 0)
+(def ^:const max-quality 50)
+
+(defn- dec-min
+  [val min-val]
+  (max (dec val) min-val))
+
+(defn- inc-max
+  [val max-val]
+  (min (inc val) max-val))
+
+(defmulti update-item :name)
+
+(defmethod update-item "+5 Dexterity Vest"
+  [item]
+  (-> item
+      (update :sell-in dec)
+      (as-> {:keys [sell-in] :as item*}
+        (cond-> item*
+          (neg? sell-in) (update :quality dec-min min-quality)
+          :always        (update :quality dec-min min-quality)))))
+
+(defmethod update-item "Elixir of the Mongoose"
+  [item]
+  (-> item
+      (update :sell-in dec)
+      (as-> {:keys [sell-in] :as item*}
+        (cond-> item*
+          (neg? sell-in) (update :quality dec-min min-quality)
+          :always        (update :quality dec-min min-quality)))))
+
+(defmethod update-item "Aged Brie"
+  [item]
+  (-> item
+      (update :sell-in dec)
+      (update :quality inc-max max-quality)))
+
+(defmethod update-item "Backstage passes to a TAFKAL80ETC concert"
+  [item]
+  (-> item
+      (update :sell-in dec)
+      (as-> {:keys [sell-in] :as item*}
+        (cond-> item*
+          (>= sell-in 0) (update :quality inc-max max-quality)
+          (< sell-in 10) (update :quality inc-max max-quality)
+          (< sell-in 5)  (update :quality inc-max max-quality)
+          (neg? sell-in) (assoc :quality 0)))))
+
+(defmethod update-item "Sulfuras, Hand Of Ragnaros"
+  [item]
+  item)
+
 (defn update-quality
   [items]
-  (map
-   (fn [item] (cond
-                (and (< (:sell-in item) 0) (= "Backstage passes to a TAFKAL80ETC concert" (:name item)))
-                (merge item {:quality 0})
-
-                (or (= (:name item) "Aged Brie") (= (:name item) "Backstage passes to a TAFKAL80ETC concert"))
-                (if (and (= (:name item) "Backstage passes to a TAFKAL80ETC concert") (>= (:sell-in item) 5) (< (:sell-in item) 10))
-                  (merge item {:quality (inc (inc (:quality item)))})
-                  (if (and (= (:name item) "Backstage passes to a TAFKAL80ETC concert") (>= (:sell-in item) 0) (< (:sell-in item) 5))
-                    (merge item {:quality (inc (inc (inc (:quality item))))})
-                    (if (< (:quality item) 50)
-                      (merge item {:quality (inc (:quality item))})
-                      item)))
-
-                (< (:sell-in item) 0)
-                (if (= "Backstage passes to a TAFKAL80ETC concert" (:name item))
-                  (merge item {:quality 0})
-                  (if (or (= "+5 Dexterity Vest" (:name item)) (= "Elixir of the Mongoose" (:name item)))
-                    (merge item {:quality (- (:quality item) 2)})
-                    item))
-
-                (or (= "+5 Dexterity Vest" (:name item)) (= "Elixir of the Mongoose" (:name item)))
-                (merge item {:quality (dec (:quality item))})
-
-                :else item))
-   (map (fn [item]
-          (if (not= "Sulfuras, Hand of Ragnaros" (:name item))
-            (merge item {:sell-in (dec (:sell-in item))})
-            item))
-        items)))
+  (map update-item items))
 
 (defn item
   [item-name, sell-in, quality]
